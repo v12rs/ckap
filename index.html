@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ckap — Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: #fff; color: #09090b;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 40px 20px;
+    }
+    .card { width: 100%; max-width: 400px; border: 1px solid #e4e4e7; border-radius: 12px; padding: 28px; }
+    .card-title { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 4px; }
+    .card-desc { font-size: 13px; color: #71717a; line-height: 1.5; margin-bottom: 24px; }
+    .field { margin-bottom: 16px; }
+    .field-label { display: block; font-size: 13px; font-weight: 500; color: #09090b; margin-bottom: 6px; }
+    .field-input {
+      width: 100%; padding: 8px 12px;
+      border: 1px solid #e4e4e7; border-radius: 6px;
+      font-size: 13px; color: #09090b; background: #fff;
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: inherit; line-height: 1.5;
+    }
+    .field-input::placeholder { color: #a1a1aa; }
+    .field-input:focus { border-color: #a1a1aa; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
+    .sep { border: none; border-top: 1px solid #f4f4f5; margin: 20px 0; }
+    .cap-area { margin-bottom: 16px; }
+    .submit-btn {
+      width: 100%; padding: 9px 16px;
+      background: #09090b; color: #fafafa;
+      border: none; border-radius: 6px;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      transition: opacity 0.15s;
+    }
+    .submit-btn:hover { opacity: 0.88; }
+    .submit-btn:active { opacity: 0.75; }
+    .result {
+      margin-top: 12px; padding: 10px 12px;
+      border-radius: 6px; font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+      display: none; line-height: 1.5;
+    }
+    .result.ok  { background: #fafafa; color: #09090b; border: 1px solid #e4e4e7; }
+    .result.err { background: #fff; color: #dc2626; border: 1px solid #fca5a5; }
+    .sep2 { border: none; border-top: 1px solid #f4f4f5; margin: 32px 0 20px; }
+    .code-label { font-size: 12px; font-weight: 500; color: #71717a; margin-bottom: 10px; }
+    pre {
+      background: #fafafa; border: 1px solid #e4e4e7; border-radius: 6px;
+      padding: 14px 16px; font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+      overflow-x: auto; line-height: 1.7; color: #09090b;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="card-title">お問い合わせ</p>
+    <p class="card-desc">24時間以内にご返信いたします。</p>
+
+    <div class="field">
+      <label class="field-label" for="name">お名前</label>
+      <input class="field-input" type="text" id="name" placeholder="山田 太郎">
+    </div>
+    <div class="field">
+      <label class="field-label" for="email">メールアドレス</label>
+      <input class="field-input" type="email" id="email" placeholder="example@email.com">
+    </div>
+
+    <hr class="sep">
+
+    <div class="cap-area">
+      <div id="my-captcha"></div>
+    </div>
+
+    <button class="submit-btn" onclick="handleSubmit()">送信する</button>
+    <div class="result" id="result"></div>
+
+    <hr class="sep2">
+
+    <p class="code-label">最小コード</p>
+    <pre>&lt;div id="my-captcha"&gt;&lt;/div&gt;
+&lt;script src="ckap.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const id = Ckap.create('my-captcha');
+  const res = Ckap.verify(id);
+  if (res.success) { /* OK */ }
+&lt;/script&gt;</pre>
+  </div>
+
+  <script src="ckap.js"></script>
+  <script>
+    const capId = Ckap.create('my-captcha', {
+      label: '私はロボットではありません',
+      expireMs: 10 * 60 * 1000,
+      onVerify: (r) => console.log('verified:', r)
+    });
+
+    function handleSubmit() {
+      const el = document.getElementById('result');
+      const v = Ckap.verify(capId);
+      if (!v.success) {
+        el.className = 'result err';
+        el.style.display = 'block';
+        const msgs = {
+          not_checked:    'CAPTCHAをチェックしてください。',
+          expired:        '有効期限切れ。もう一度チェックしてください。',
+          token_mismatch: 'セキュリティエラー。ページを再読み込みしてください。',
+          invalid_id:     'CAPTCHAが初期化されていません。'
+        };
+        el.textContent = msgs[v.reason] || '確認エラー';
+        return;
+      }
+      el.className = 'result ok';
+      el.style.display = 'block';
+      el.textContent = '送信成功 — Ckap.verify() → { success: true }';
+      setTimeout(() => Ckap.reset(capId), 3000);
+    }
+  </script>
+</body>
+</html>
